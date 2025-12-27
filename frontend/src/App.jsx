@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import Categories from './pages/Categories';
 import Menu from './pages/Menu';
 import GuestMenu from './pages/GuestMenu';
+import Modifiers from './pages/Modifiers';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
                     <Route path="/" element={<Navigate to="/categories" replace />} />
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/menu" element={<Menu />} />
+                    <Route path="/modifiers" element={<Modifiers />} />
                     <Route path="/dashboard" element={<div>Trang Dashboard (Đang phát triển)</div>} />
                     <Route path="/orders" element={<div>Trang Đơn hàng (Đang phát triển)</div>} />
                   </Routes>

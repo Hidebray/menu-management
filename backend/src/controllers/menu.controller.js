@@ -94,4 +94,19 @@ const update = async (req, res) => {
   }
 };
 
-module.exports = { create, list, remove, uploadPhotos, update };
+const getOne = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await menuService.getItemDetail(id);
+    
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'Item not found' });
+    }
+
+    res.json({ success: true, data: item });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { create, list, remove, uploadPhotos, update, getOne };

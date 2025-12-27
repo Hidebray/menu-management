@@ -9,6 +9,7 @@ const Menu = () => {
     const [items, setItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modifierGroups, setModifierGroups] = useState([]);
 
     // State bộ lọc và phân trang
     const [filters, setFilters] = useState({
@@ -47,8 +48,18 @@ const Menu = () => {
         }
     };
 
+    const fetchModifierGroups = async () => {
+    try {
+        const res = await axiosClient.get(`/admin/menu/groups?restaurant_id=${RESTAURANT_ID}`);
+        setModifierGroups(res.data.data);
+    } catch (error) { console.error(error); }
+};
+
     // Load danh mục 1 lần đầu
-    useEffect(() => { fetchCategories(); }, []);
+    useEffect(() => { 
+        fetchCategories();
+        fetchModifierGroups();
+    }, []);
 
     // Load items mỗi khi filters hoặc page thay đổi (Debounce search nếu cần)
     useEffect(() => {
@@ -124,6 +135,52 @@ const Menu = () => {
 
     if (loading && items.length === 0 && categories.length === 0) return <div className="p-8 text-center">Đang tải...</div>;
 
+    const handleGetItemDetail = async (id) => {
+        try {
+            const res = await axiosClient.get(`/admin/menu/items/${id}`);
+            return res.data.data;
+        } catch (error) {
+            console.error(error);
+            alert('Lỗi tải chi tiết món: ' + error.message);
+            return null;
+        }
+    };
+
+    const handleDeletePhoto = async (photoId) => {
+        if (!window.confirm('Xóa ảnh này?')) return;
+        try {
+            await axiosClient.delete(`/admin/photos/${photoId}`);
+            alert('Đã xóa ảnh');
+            return true;
+        } catch (error) {
+            alert('Lỗi: ' + error.message);
+            return false;
+        }
+    };
+
+    const handleSetPrimaryPhoto = async (photoId) => {
+        try {
+            await axiosClient.put(`/admin/photos/${photoId}/primary`);
+            alert('Đã đặt làm ảnh đại diện');
+            fetchItems(); // Refresh list to show new thumbnail
+            return true;
+        } catch (error) {
+            alert('Lỗi: ' + error.message);
+            return false;
+        }
+    };
+
+    const handleAttachModifier = async (itemId, groupId) => {
+    try {
+        await axiosClient.post(`/admin/menu/items/${itemId}/modifiers`, { group_id: groupId });
+        alert('Đã gắn nhóm modifier thành công!');
+        return true;
+    } catch (error) {
+        alert('Lỗi: ' + error.message);
+        return false;
+    }
+};
+
     return (
         <DishesManagement
             items={items}
@@ -134,8 +191,13 @@ const Menu = () => {
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onUploadPhoto={handleUploadPhoto}
+            onGetItemDetail={handleGetItemDetail}
+            onDeletePhoto={handleDeletePhoto}
+            onSetPrimaryPhoto={handleSetPrimaryPhoto}
             pagination={{ page, limit: LIMIT }}
             onPageChange={setPage}
+            modifierGroups={modifierGroups}    
+            onAttachModifier={handleAttachModifier} 
         />
     );
 };

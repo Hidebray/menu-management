@@ -8,6 +8,7 @@ const categoryRoutes = require('./routes/category.routes');
 const menuRoutes = require('./routes/menu.routes');
 const modifierRoutes = require('./routes/modifier.routes');
 const guestRoutes = require('./routes/guest.routes');
+const photoRoutes = require('./routes/photo.routes');
 
 app.use(cors());
 app.use(express.json());
@@ -15,8 +16,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/admin/menu/categories', categoryRoutes);
 app.use('/api/admin/menu/items', menuRoutes);
 app.use('/api/admin/menu', modifierRoutes);
+app.use('/api/admin/photos', photoRoutes);
 app.use('/api/menu', guestRoutes);
-
 
 
 app.get('/', (req, res) => {

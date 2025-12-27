@@ -128,4 +128,63 @@ const deleteItem = async (id, restaurantId) => {
   return result.rows[0];
 };
 
-module.exports = { createItem, getItems, updateItem, deleteItem };
+const getItemDetail = async (itemId) => {
+  // 1. Get basic item info
+  const itemQuery = `SELECT * FROM menu_items WHERE id = $1`;
+  const itemRes = await pool.query(itemQuery, [itemId]);
+  
+  if (itemRes.rows.length === 0) return null;
+  const item = itemRes.rows[0];
+
+  // 2. Get all photos
+  const photoQuery = `
+    SELECT * FROM menu_item_photos 
+    WHERE menu_item_id = $1 
+    ORDER BY is_primary DESC, created_at DESC
+  `;
+  const photoRes = await pool.query(photoQuery, [itemId]);
+  item.photos = photoRes.rows;
+
+  // 3. Get modifiers (We will use this later for Section 4)
+  const modQuery = `
+    SELECT 
+      g.id as group_id, g.name as group_name, g.selection_type, 
+      g.min_selections, g.max_selections, g.is_required,
+      o.id as option_id, o.name as option_name, o.price_adjustment
+    FROM menu_item_modifier_groups mg
+    JOIN modifier_groups g ON mg.group_id = g.id
+    LEFT JOIN modifier_options o ON g.id = o.group_id
+    WHERE mg.menu_item_id = $1 
+    ORDER BY g.display_order, o.price_adjustment;
+  `;
+  const modRes = await pool.query(modQuery, [itemId]);
+
+  // Group modifiers
+  const groupsMap = {};
+  modRes.rows.forEach(row => {
+    if (!groupsMap[row.group_id]) {
+      groupsMap[row.group_id] = {
+        id: row.group_id,
+        name: row.group_name,
+        type: row.selection_type,
+        required: row.is_required,
+        min: row.min_selections,
+        max: row.max_selections,
+        options: []
+      };
+    }
+    if (row.option_id) {
+        groupsMap[row.group_id].options.push({
+          id: row.option_id,
+          name: row.option_name,
+          price: row.price_adjustment
+        });
+    }
+  });
+  
+  item.modifier_groups = Object.values(groupsMap);
+
+  return item;
+};
+
+module.exports = { createItem, getItems, updateItem, deleteItem, getItemDetail };
