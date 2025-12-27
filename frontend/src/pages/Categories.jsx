@@ -1,23 +1,20 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import { CategoryManagement } from '../components/CategoryManagement';
+import { toast } from 'sonner'; // [1] Import toast
 
 const Categories = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // UUID Nhà hàng (Thay bằng ID thật của bạn)
     const RESTAURANT_ID = 'c56a4180-65aa-42ec-a945-5fd21dec0538';
-
-    // --- API ACTIONS ---
 
     const fetchCategories = async () => {
         try {
-            // Gọi API lấy danh sách
             const res = await axiosClient.get(`/admin/menu/categories?restaurant_id=${RESTAURANT_ID}`);
             setCategories(res.data.data);
         } catch (error) {
             console.error("Lỗi tải danh mục:", error);
+            toast.error("Không thể tải danh sách danh mục"); // [2] Báo lỗi nhẹ nhàng
         } finally {
             setLoading(false);
         }
@@ -34,10 +31,10 @@ const Categories = () => {
                 restaurant_id: RESTAURANT_ID,
                 display_order: categories.length + 1
             });
-            // Load lại sau khi thêm
+            toast.success("Tạo danh mục thành công!"); // [3] Thông báo thành công
             fetchCategories();
         } catch (error) {
-            alert('Lỗi: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -46,14 +43,13 @@ const Categories = () => {
             const payload = {
                 ...updatedData,
                 restaurant_id: RESTAURANT_ID,
-                // Giữ nguyên display_order cũ nếu form không gửi lên, hoặc gửi mặc định
                 display_order: updatedData.display_order || 0
             };
             await axiosClient.put(`/admin/menu/categories/${id}`, payload);
-            alert('Cập nhật thành công!');
-            fetchCategories()
+            toast.success("Cập nhật thành công!");
+            fetchCategories();
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            toast.error('Lỗi: ' + error.message);
         }
     };
 
@@ -63,19 +59,14 @@ const Categories = () => {
             await axiosClient.delete(`/admin/menu/categories/${id}`, {
                 data: { restaurant_id: RESTAURANT_ID }
             });
-
-            alert('Đã xóa thành công!');
+            toast.success("Đã xóa danh mục!");
             fetchCategories();
         } catch (error) {
-            alert('Lỗi: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    if (loading) return (
-        <div className="flex h-[50vh] items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-    );
+    if (loading) return <div className="flex h-[50vh] items-center justify-center">Loading...</div>;
 
     return (
         <div className="space-y-6">

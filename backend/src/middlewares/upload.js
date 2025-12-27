@@ -1,10 +1,16 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+const uploadDir = 'uploads/';
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir);
+}
 
 // Cấu hình nơi lưu và tên file
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Lưu vào thư mục uploads/ ở root
+    cb(null, uploadDir); // Lưu vào thư mục uploads/ ở root
   },
   filename: function (req, file, cb) {
     // Đặt tên file: thời-gian-hiện-tại + số-ngẫu-nhiên + đuôi-file-gốc

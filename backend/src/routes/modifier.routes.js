@@ -14,4 +14,8 @@ router.post('/groups/:groupId/options', modifierController.addOption);
 // 4. Attach to item
 router.post('/items/:itemId/modifiers', modifierController.attachToItem);
 
+router.put('/groups/:id', modifierController.updateGroup);
+router.delete('/groups/:id', modifierController.deleteGroup);
+router.delete('/options/:id', modifierController.deleteOption);
+
 module.exports = router;

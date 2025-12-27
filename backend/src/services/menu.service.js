@@ -187,4 +187,14 @@ const getItemDetail = async (itemId) => {
   return item;
 };
 
-module.exports = { createItem, getItems, updateItem, deleteItem, getItemDetail };
+const removeModifierFromItem = async (itemId, groupId) => {
+  const query = `
+    DELETE FROM menu_item_modifier_groups 
+    WHERE menu_item_id = $1 AND group_id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [itemId, groupId]);
+  return result.rowCount > 0; // Trả về true nếu xóa thành công
+};
+
+module.exports = { createItem, getItems, updateItem, deleteItem, getItemDetail, removeModifierFromItem };

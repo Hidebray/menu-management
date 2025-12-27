@@ -75,4 +75,53 @@ const listGroups = async (req, res) => {
     }
 };
 
-module.exports = { createGroup, addOption, attachToItem, listGroups };
+// Update Group
+const updateGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Lấy restaurant_id từ body để check quyền sở hữu
+    const { restaurant_id, ...data } = req.body; 
+    
+    const updated = await modifierService.updateGroup(id, restaurant_id, data);
+    
+    if (!updated) {
+        return res.status(404).json({ success: false, message: 'Group not found or permission denied' });
+    }
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Delete Group
+const deleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { restaurant_id } = req.body; // Cần restaurant_id để đảm bảo xóa đúng của mình
+
+    const deleted = await modifierService.deleteGroup(id, restaurant_id);
+    if (!deleted) {
+        return res.status(404).json({ success: false, message: 'Group not found' });
+    }
+    res.json({ success: true, message: 'Group deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Delete Option
+const deleteOption = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await modifierService.deleteOption(id);
+    if (!result) {
+        return res.status(404).json({ success: false, message: 'Option not found' });
+    }
+    res.json({ success: true, message: 'Option deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { createGroup, addOption, attachToItem, listGroups, updateGroup, deleteGroup, deleteOption };
+

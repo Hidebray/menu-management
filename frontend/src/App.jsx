@@ -4,17 +4,19 @@ import Categories from './pages/Categories';
 import Menu from './pages/Menu';
 import GuestMenu from './pages/GuestMenu';
 import Modifiers from './pages/Modifiers';
+import { Toaster } from 'sonner';
 
 function App() {
   return (
     <BrowserRouter>
+    <Toaster position="top-right" richColors />
       <Routes>
         {/* Route dành riêng cho khách (không có Sidebar) */}
         <Route path="/guest" element={<GuestMenu />} />
 
         {/* Layout cho Admin (có Sidebar) */}
         <Route
-          path="/*"
+          path= "/*"
           element={
             <div className="flex min-h-screen bg-muted/20">
               <Sidebar />

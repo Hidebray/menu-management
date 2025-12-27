@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import { DishesManagement } from '../components/DishesManagement';
+import { toast } from 'sonner'; // [Import]
 
 const Menu = () => {
-    // Thay bằng UUID Nhà hàng của bạn
     const RESTAURANT_ID = 'c56a4180-65aa-42ec-a945-5fd21dec0538';
-
     const [items, setItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modifierGroups, setModifierGroups] = useState([]);
 
-    // State bộ lọc và phân trang
+    // State bộ lọc
     const [filters, setFilters] = useState({
-        search: '',
-        category_id: '',
-        status: '',
+        search: '', category_id: '', status: '',
+        sort_by: 'created_at', sort_order: 'desc',
     });
     const [page, setPage] = useState(1);
     const LIMIT = 10;
@@ -31,65 +29,45 @@ const Menu = () => {
     const fetchItems = async () => {
         try {
             setLoading(true);
-            // Tạo query params từ filters và page
             const params = new URLSearchParams({
-                restaurant_id: RESTAURANT_ID,
-                page: page,
-                limit: LIMIT,
-                ...filters
+                restaurant_id: RESTAURANT_ID, page: page, limit: LIMIT, ...filters
             });
-
             const res = await axiosClient.get(`/admin/menu/items?${params.toString()}`);
             setItems(res.data.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { console.error(error); } 
+        finally { setLoading(false); }
     };
 
     const fetchModifierGroups = async () => {
-    try {
-        const res = await axiosClient.get(`/admin/menu/groups?restaurant_id=${RESTAURANT_ID}`);
-        setModifierGroups(res.data.data);
-    } catch (error) { console.error(error); }
-};
-
-    // Load danh mục 1 lần đầu
-    useEffect(() => { 
-        fetchCategories();
-        fetchModifierGroups();
-    }, []);
-
-    // Load items mỗi khi filters hoặc page thay đổi (Debounce search nếu cần)
-    useEffect(() => {
-        // Reset về trang 1 khi filter thay đổi (trừ khi chính page thay đổi)
-        fetchItems();
-    }, [page, filters]);
-
-    // --- HANDLERS ---
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-        setPage(1); // Reset về trang 1 khi lọc
+        try {
+            const res = await axiosClient.get(`/admin/menu/groups?restaurant_id=${RESTAURANT_ID}`);
+            setModifierGroups(res.data.data);
+        } catch (error) { console.error(error); }
     };
 
+    useEffect(() => { fetchCategories(); fetchModifierGroups(); }, []);
+    useEffect(() => { fetchItems(); }, [page, filters]);
+
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+        setPage(1);
+    };
+
+    // --- HANDLERS VỚI TOAST ---
     const handleAddItem = async (data) => {
         try {
-            // Ép kiểu số cho price và prep_time_minutes trước khi gửi
             const payload = {
                 ...data,
                 restaurant_id: RESTAURANT_ID,
-                price: Number(data.price),               // <--- Quan trọng: Ép sang số
-                prep_time_minutes: Number(data.prep_time_minutes) // <--- Quan trọng
+                price: Number(data.price),
+                prep_time_minutes: Number(data.prep_time_minutes)
             };
-
             await axiosClient.post('/admin/menu/items', payload);
-            alert('Thêm món thành công!');
+            toast.success('Thêm món mới thành công!'); // [Toast Success]
             fetchItems();
         } catch (error) {
-            // Hiển thị lỗi chi tiết từ backend để dễ debug
             console.error("Lỗi thêm món:", error.response?.data);
-            alert('Lỗi: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi: ' + (error.response?.data?.message || error.message)); // [Toast Error]
         }
     };
 
@@ -101,13 +79,11 @@ const Menu = () => {
                 price: Number(data.price),
                 prep_time_minutes: Number(data.prep_time_minutes)
             };
-
             await axiosClient.put(`/admin/menu/items/${id}`, payload);
-
-            alert('Cập nhật thành công!');
+            toast.success('Đã cập nhật món ăn!');
             fetchItems();
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            toast.error('Lỗi cập nhật: ' + error.message);
         }
     };
 
@@ -115,8 +91,9 @@ const Menu = () => {
         if (!window.confirm('Bạn chắc chắn muốn xóa?')) return;
         try {
             await axiosClient.delete(`/admin/menu/items/${id}`, { data: { restaurant_id: RESTAURANT_ID } });
+            toast.success('Đã xóa món ăn');
             fetchItems();
-        } catch (error) { alert('Lỗi xóa: ' + error.message); }
+        } catch (error) { toast.error('Lỗi xóa: ' + error.message); }
     };
 
     const handleUploadPhoto = async (itemId, fileList) => {
@@ -128,20 +105,20 @@ const Menu = () => {
             await axiosClient.post(`/admin/menu/items/${itemId}/photos`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert('Upload ảnh thành công!');
+            toast.success('Upload ảnh thành công!');
             fetchItems();
-        } catch (error) { throw error; }
+        } catch (error) { 
+            toast.error('Upload thất bại: ' + error.message);
+            throw error; 
+        }
     };
-
-    if (loading && items.length === 0 && categories.length === 0) return <div className="p-8 text-center">Đang tải...</div>;
 
     const handleGetItemDetail = async (id) => {
         try {
             const res = await axiosClient.get(`/admin/menu/items/${id}`);
             return res.data.data;
         } catch (error) {
-            console.error(error);
-            alert('Lỗi tải chi tiết món: ' + error.message);
+            toast.error('Lỗi tải chi tiết: ' + error.message);
             return null;
         }
     };
@@ -150,10 +127,10 @@ const Menu = () => {
         if (!window.confirm('Xóa ảnh này?')) return;
         try {
             await axiosClient.delete(`/admin/photos/${photoId}`);
-            alert('Đã xóa ảnh');
+            toast.success('Đã xóa ảnh');
             return true;
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            toast.error('Lỗi: ' + error.message);
             return false;
         }
     };
@@ -161,25 +138,39 @@ const Menu = () => {
     const handleSetPrimaryPhoto = async (photoId) => {
         try {
             await axiosClient.put(`/admin/photos/${photoId}/primary`);
-            alert('Đã đặt làm ảnh đại diện');
-            fetchItems(); // Refresh list to show new thumbnail
+            toast.success('Đã đặt làm ảnh đại diện');
+            fetchItems();
             return true;
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            toast.error('Lỗi: ' + error.message);
             return false;
         }
     };
 
     const handleAttachModifier = async (itemId, groupId) => {
-    try {
-        await axiosClient.post(`/admin/menu/items/${itemId}/modifiers`, { group_id: groupId });
-        alert('Đã gắn nhóm modifier thành công!');
-        return true;
-    } catch (error) {
-        alert('Lỗi: ' + error.message);
-        return false;
-    }
-};
+        try {
+            await axiosClient.post(`/admin/menu/items/${itemId}/modifiers`, { group_id: groupId });
+            toast.success('Đã gắn nhóm modifier!');
+            return true;
+        } catch (error) {
+            toast.error('Lỗi: ' + error.message);
+            return false;
+        }
+    };
+
+    const handleDetachModifier = async (itemId, groupId) => {
+        if(!window.confirm("Bạn muốn gỡ nhóm này khỏi món ăn?")) return false;
+        try {
+            await axiosClient.delete(`/admin/menu/items/${itemId}/modifiers/${groupId}`);
+            toast.success('Đã gỡ nhóm modifier!');
+            return true;
+        } catch (error) {
+            toast.error('Lỗi: ' + error.message);
+            return false;
+        }
+    };
+
+    if (loading && items.length === 0) return <div className="p-8 text-center">Đang tải...</div>;
 
     return (
         <DishesManagement
@@ -198,6 +189,7 @@ const Menu = () => {
             onPageChange={setPage}
             modifierGroups={modifierGroups}    
             onAttachModifier={handleAttachModifier} 
+            onDetachModifier={handleDetachModifier}
         />
     );
 };

@@ -1,12 +1,13 @@
 // src/components/Sidebar.jsx
-import { LayoutDashboard, UtensilsCrossed, ShoppingCart, Settings } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Coffee, ShoppingCart, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Dùng Link của React Router
 import { cn } from '../lib/utils'; 
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { id: 'categories', label: 'Quản lý Danh mục', icon: UtensilsCrossed, path: '/categories' }, // Sửa id và path cho đúng bài tập
+  { id: 'categories', label: 'Quản lý Danh mục', icon: UtensilsCrossed, path: '/categories' },
   { id: 'menu', label: 'Quản lý Món ăn', icon: UtensilsCrossed, path: '/menu' },
+  { id: 'modifiers', label: 'Modifiers (Topping)', icon: Coffee, path: '/modifiers' },
   { id: 'orders', label: 'Đơn hàng', icon: ShoppingCart, path: '/orders' },
   { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
 ];

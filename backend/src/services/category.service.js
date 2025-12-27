@@ -48,6 +48,20 @@ const updateCategory = async (id, restaurantId, data) => {
 };
 
 const deleteCategory = async (id, restaurantId) => {
+    // [THÊM MỚI] Bước 1: Kiểm tra xem danh mục này có chứa món ăn nào (chưa bị xóa) không?
+    const checkQuery = `
+        SELECT COUNT(*) FROM menu_items 
+        WHERE category_id = $1 AND is_deleted = false
+    `;
+    const checkResult = await pool.query(checkQuery, [id]);
+    const itemCount = parseInt(checkResult.rows[0].count);
+
+    if (itemCount > 0) {
+        // Nếu còn món ăn -> Ném lỗi để Controller bắt được và báo về Frontend
+        throw new Error(`Không thể xóa: Danh mục này đang chứa ${itemCount} món ăn.`);
+    }
+
+    // Bước 2: Nếu danh mục rỗng, tiến hành Xóa mềm (Soft Delete - chuyển status thành inactive)
     const query = `
       UPDATE menu_categories 
       SET status = 'inactive', updated_at = NOW()
@@ -55,6 +69,12 @@ const deleteCategory = async (id, restaurantId) => {
       RETURNING id, name, status;
     `;
     const result = await pool.query(query, [id, restaurantId]);
+    
+    // Kiểm tra xem có update được dòng nào không (phòng trường hợp sai ID)
+    if (result.rowCount === 0) {
+         return null; 
+    }
+
     return result.rows[0];
 };
 

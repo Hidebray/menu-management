@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -10,9 +11,13 @@ const modifierRoutes = require('./routes/modifier.routes');
 const guestRoutes = require('./routes/guest.routes');
 const photoRoutes = require('./routes/photo.routes');
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true 
+}));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/admin/menu/categories', categoryRoutes);
 app.use('/api/admin/menu/items', menuRoutes);
 app.use('/api/admin/menu', modifierRoutes);

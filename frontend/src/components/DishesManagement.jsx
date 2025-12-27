@@ -43,6 +43,7 @@ export function DishesManagement({
   onSetPrimaryPhoto,
   modifierGroups,
   onAttachModifier,
+  onDetachModifier,
   pagination,
   onPageChange
 }) {
@@ -198,6 +199,26 @@ export function DishesManagement({
               <SelectItem value="available">Đang bán</SelectItem>
               <SelectItem value="sold_out">Hết hàng</SelectItem>
               <SelectItem value="unavailable">Ngừng bán</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full md:w-[200px]">
+          <Select
+            value={`${filters.sort_by}-${filters.sort_order}`}
+            onValueChange={(val) => {
+              const [sortBy, sortOrder] = val.split('-');
+              onFilterChange('sort_by', sortBy);
+              onFilterChange('sort_order', sortOrder);
+            }}
+          >
+            <SelectTrigger className="bg-background">
+              <SelectValue placeholder="Sắp xếp" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at-desc">Mới nhất</SelectItem>
+              <SelectItem value="created_at-asc">Cũ nhất</SelectItem>
+              <SelectItem value="price-asc">Giá: Thấp đến Cao</SelectItem>
+              <SelectItem value="price-desc">Giá: Cao đến Thấp</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -426,54 +447,71 @@ export function DishesManagement({
           <div className="space-y-6 py-4">
             {/* SECTION 1: ADD NEW GROUP */}
             <div className="flex gap-2 items-end border-b pb-4">
-                <div className="flex-1 space-y-1">
-                    <Label>Chọn nhóm để gắn thêm:</Label>
-                    <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                        <SelectTrigger><SelectValue placeholder="Chọn nhóm (VD: Size)..." /></SelectTrigger>
-                        <SelectContent>
-                            {modifierGroups?.map(g => (
-                                <SelectItem key={g.id} value={g.id}>
-                                    {g.name} ({g.options?.length || 0} lựa chọn)
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <Button onClick={handleAddGroupToItem} disabled={!selectedGroupId}>
-                    Gắn
-                </Button>
+              <div className="flex-1 space-y-1">
+                <Label>Chọn nhóm để gắn thêm:</Label>
+                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                  <SelectTrigger><SelectValue placeholder="Chọn nhóm (VD: Size)..." /></SelectTrigger>
+                  <SelectContent>
+                    {modifierGroups?.map(g => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name} ({g.options?.length || 0} lựa chọn)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAddGroupToItem} disabled={!selectedGroupId}>
+                Gắn
+              </Button>
             </div>
 
             {/* SECTION 2: LIST ATTACHED GROUPS */}
             <div>
-                <h4 className="font-medium mb-2">Các nhóm đang áp dụng:</h4>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                    {selectedItemForModifiers?.modifier_groups?.length === 0 && (
-                        <p className="text-sm text-muted-foreground italic text-center py-4 border border-dashed rounded">
-                            Chưa có nhóm nào được gắn.
-                        </p>
-                    )}
-                    
-                    {selectedItemForModifiers?.modifier_groups?.map((group, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-muted/30 p-3 rounded border">
-                            <div>
-                                <div className="font-semibold text-sm">{group.name}</div>
-                                <div className="text-xs text-muted-foreground flex gap-2 mt-1">
-                                    <Badge variant="secondary" className="text-[10px] h-5">{group.type}</Badge>
-                                    <span className="flex items-center">{group.options?.length} options</span>
-                                </div>
-                            </div>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Đã gắn
-                            </Badge>
-                        </div>
-                    ))}
-                </div>
+              <h4 className="font-medium mb-2">Các nhóm đang áp dụng:</h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                {selectedItemForModifiers?.modifier_groups?.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic text-center py-4 border border-dashed rounded">
+                    Chưa có nhóm nào được gắn.
+                  </p>
+                )}
+
+                {selectedItemForModifiers?.modifier_groups?.map((group, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-muted/30 p-3 rounded border">
+                    <div>
+                      <div className="font-semibold text-sm">{group.name}</div>
+                      <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                        <Badge variant="secondary" className="text-[10px] h-5">{group.type}</Badge>
+                        <span className="flex items-center">{group.options?.length} options</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Đã gắn
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={async () => {
+                          const success = await onDetachModifier(selectedItemForModifiers.id, group.id);
+                          if (success) {
+                            // Refresh lại data để mất dòng này
+                            const updated = await onGetItemDetail(selectedItemForModifiers.id);
+                            setSelectedItemForModifiers(updated);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          
+
           <DialogFooter>
-             <Button variant="outline" onClick={() => setIsModifierDialogOpen(false)}>Đóng</Button>
+            <Button variant="outline" onClick={() => setIsModifierDialogOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

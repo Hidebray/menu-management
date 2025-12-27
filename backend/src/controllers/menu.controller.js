@@ -2,8 +2,8 @@ const menuService = require('../services/menu.service');
 const { z } = require('zod');
 const photoService = require('../services/photo.service');
 
-// Schema Validate
-const createItemSchema = z.object({
+// Base Schema
+const itemSchema = z.object({
   name: z.string().min(2).max(80),
   category_id: z.string().uuid(),
   price: z.number().positive(),
@@ -11,14 +11,20 @@ const createItemSchema = z.object({
   prep_time_minutes: z.number().int().min(0).max(240).optional(),
   status: z.enum(['available', 'unavailable', 'sold_out']),
   is_chef_recommended: z.boolean().optional(),
-  restaurant_id: z.string().uuid() // Tạm thời gửi từ body để test
 });
+
+// Schema cho Create (Bắt buộc restaurant_id)
+const createItemSchema = itemSchema.extend({
+  restaurant_id: z.string().uuid()
+});
+
+const updateItemSchema = itemSchema.partial();
 
 const create = async (req, res) => {
   try {
     const validatedData = createItemSchema.parse(req.body);
     const { restaurant_id, ...itemData } = validatedData;
-    
+
     const newItem = await menuService.createItem(restaurant_id, itemData);
     res.status(201).json({ success: true, data: newItem });
   } catch (error) {
@@ -53,7 +59,7 @@ const remove = async (req, res) => {
     const { restaurant_id } = req.body; // Tạm thời lấy từ body
     const deleted = await menuService.deleteItem(id, restaurant_id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Item not found' });
-    
+
     res.json({ success: true, message: 'Item deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -79,11 +85,15 @@ const uploadPhotos = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const validatedData = createItemSchema.parse(req.body);
-    const { restaurant_id, ...itemData } = validatedData;
+    const itemData = updateItemSchema.parse(req.body);
+    const restaurant_id = req.body.restaurant_id;
+
+    if (!restaurant_id) {
+      return res.status(400).json({ success: false, message: "Missing restaurant_id for verification" });
+    }
 
     const updatedItem = await menuService.updateItem(id, restaurant_id, itemData);
-    
+
     if (!updatedItem) {
       return res.status(404).json({ success: false, message: 'Item not found or permission denied' });
     }
@@ -98,7 +108,7 @@ const getOne = async (req, res) => {
   try {
     const { id } = req.params;
     const item = await menuService.getItemDetail(id);
-    
+
     if (!item) {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
@@ -109,4 +119,19 @@ const getOne = async (req, res) => {
   }
 };
 
-module.exports = { create, list, remove, uploadPhotos, update, getOne };
+const removeModifier = async (req, res) => {
+  try {
+    const { id, groupId } = req.params; // Lấy itemId và groupId từ URL
+    const success = await menuService.removeModifierFromItem(id, groupId);
+    
+    if (!success) {
+      return res.status(404).json({ success: false, message: 'Link not found' });
+    }
+
+    res.json({ success: true, message: 'Modifier group detached successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { create, list, remove, uploadPhotos, update, getOne, removeModifier };
