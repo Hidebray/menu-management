@@ -170,7 +170,7 @@ export function DishesManagement({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Tìm theo tên món..."
-            className="pl-8 bg-background" x
+            className="pl-8 bg-background"
             value={filters.search}
             onChange={(e) => onFilterChange('search', e.target.value)}
           />
